@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ノートン売上試算</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+    background: #1a1a18;
+    color: #f0ede6;
+    min-height: 100vh;
+    padding: 20px 16px 48px;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  /* Hero */
+  .hero {
+    background: #F5C800;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .hero-icon {
+    width: 44px;
+    height: 44px;
+    background: #2C2C2A;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .hero-icon svg { width: 24px; height: 24px; }
+  .hero-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a18;
+    letter-spacing: 0.02em;
+  }
+  .hero-sub {
+    font-size: 12px;
+    color: #5F5E5A;
+    margin-top: 3px;
+  }
+
+  /* Input section */
+  .section {
+    background: #242422;
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: #888780;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 480px) {
+    .input-grid { grid-template-columns: 1fr; }
+  }
+  .input-block label {
+    display: block;
+    font-size: 12px;
+    color: #888780;
+    margin-bottom: 8px;
+  }
+  .input-block input[type=number] {
+    width: 100%;
+    background: #1a1a18;
+    border: 1px solid rgba(245,200,0,0.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 20px;
+    font-weight: 500;
+    color: #F5C800;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .input-block input[type=number]::-webkit-outer-spin-button,
+  .input-block input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .input-block input[type=number]:focus {
+    border-color: #F5C800;
+  }
+
+  /* Metrics */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 540px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 340px) {
+    .metrics { grid-template-columns: 1fr; }
+  }
+  .metric {
+    background: #242422;
+    border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: #F5C800;
+    opacity: 0.6;
+  }
+  .metric .mlabel {
+    font-size: 11px;
+    color: #888780;
+    margin-bottom: 8px;
+    letter-spacing: 0.03em;
+  }
+  .metric .mval {
+    font-size: 17px;
+    font-weight: 700;
+    color: #F5C800;
+    line-height: 1.2;
+  }
+  .metric .mval .unit {
+    font-size: 11px;
+    font-weight: 400;
+    color: #888780;
+    margin-left: 2px;
+  }
+  .metric .msub {
+    font-size: 11px;
+    color: #888780;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 0.5px solid rgba(255,255,255,0.06);
+  }
+  .metric .msub-val {
+    color: #D3D1C7;
+    font-weight: 500;
+  }
+
+  /* Chart */
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 260px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: #444441;
+    margin-top: 24px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#F5C800" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+        <polyline points="16 7 22 7 22 13"/>
+      </svg>
+    </div>
+    <div>
+      <div class="hero-title">ノートン売上試算</div>
+      <div class="hero-sub">単価と月間獲得件数を入力してください</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">入力項目</div>
+    <div class="input-grid">
+      <div class="input-block">
+        <label>単価（円）</label>
+        <input type="number" id="unitPrice" value="200" min="1" step="10">
+      </div>
+      <div class="input-block">
+        <label>月間想定獲得件数（件）</label>
+        <input type="number" id="monthlyAcq" value="100" min="1" step="10">
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics" id="metricsRow"></div>
+
+  <div class="section">
+    <div class="section-title">累計報酬推移（継続獲得）</div>
+    <div class="chart-wrap">
+      <canvas id="mainChart" role="img" aria-label="96ヶ月間の継続獲得時累計報酬グラフ"></canvas>
+    </div>
+  </div>
+
+  <div class="footer">退会率：1〜24ヶ月目 1%/月　25ヶ月目以降 0.5%/月</div>
+
+</div>
+
+<script>
+const MONTHS = 96;
+const KEY_MONTHS = [1, 12, 24, 36, 48, 60, 72, 84, 96];
+const CARD_MONTHS = [1, 12, 24, 36, 48, 60];
+
+function buildSurvivalTable(months) {
+  const s = [1.0];
+  for (let e = 1; e < months; e++) {
+    const dec = e <= 23 ? 0.01 : 0.005;
+    s.push(Math.round((s[e-1] - dec) * 1000) / 1000);
+  }
+  return s;
+}
+
+function calcMonthlyAt(m, unitPrice, monthlyAcq, st) {
+  let total = 0;
+  for (let start = 0; start <= m; start++) total += monthlyAcq * st[m - start] * unitPrice;
+  return Math.round(total);
+}
+
+function calcAnnual(m, unitPrice, monthlyAcq, st) {
+  let total = 0;
+  for (let i = Math.max(0, m - 11); i <= m; i++) total += calcMonthlyAt(i, unitPrice, monthlyAcq, st);
+  return total;
+}
+
+function calcLifetimeAll(unitPrice, monthlyAcq, st) {
+  return Array.from({length: MONTHS}, (_, m) => {
+    let total = 0;
+    for (let start = 0; start <= m; start++) total += monthlyAcq * st[m - start] * unitPrice;
+    return Math.round(total);
+  });
+}
+
+function fmt(n) { return Math.round(n).toLocaleString('ja-JP'); }
+function fmtMan(n) { return Math.round(n / 10000).toLocaleString('ja-JP') + '万円'; }
+
+const allLabels = Array.from({length: MONTHS}, (_, i) => KEY_MONTHS.includes(i + 1) ? `${i+1}ヶ月` : '');
+const pointRadii = Array.from({length: MONTHS}, (_, i) => KEY_MONTHS.includes(i + 1) ? 5 : 0);
+const pointHoverRadii = Array.from({length: MONTHS}, (_, i) => KEY_MONTHS.includes(i + 1) ? 7 : 4);
+const st = buildSurvivalTable(MONTHS);
+let chartInstance = null;
+
+function update() {
+  const unitPrice = Math.max(1, parseInt(document.getElementById('unitPrice').value) || 200);
+  const monthlyAcq = Math.max(1, parseInt(document.getElementById('monthlyAcq').value) || 100);
+  const data = calcLifetimeAll(unitPrice, monthlyAcq, st);
+
+  document.getElementById('metricsRow').innerHTML = CARD_MONTHS.map(m => {
+    const monthly = calcMonthlyAt(m - 1, unitPrice, monthlyAcq, st);
+    const annual = calcAnnual(m - 1, unitPrice, monthlyAcq, st);
+    return `<div class="metric">
+      <div class="mlabel">${m}ヶ月時点</div>
+      <div class="mval">¥${fmt(monthly)}<span class="unit">/月</span></div>
+      <div class="msub">年間 <span class="msub-val">¥${fmt(annual)}</span></div>
+    </div>`;
+  }).join('');
+
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(document.getElementById('mainChart'), {
+    type: 'line',
+    data: {
+      labels: allLabels,
+      datasets: [{
+        label: '累計報酬',
+        data,
+        borderColor: '#F5C800',
+        backgroundColor: 'rgba(245,200,0,0.08)',
+        fill: true,
+        pointRadius: pointRadii,
+        pointHoverRadius: pointHoverRadii,
+        pointBackgroundColor: '#F5C800',
+        pointBorderColor: '#1a1a18',
+        pointBorderWidth: 2,
+        tension: 0.3,
+        borderWidth: 2.5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#2C2C2A',
+          titleColor: '#F5C800',
+          bodyColor: '#D3D1C7',
+          borderColor: 'rgba(245,200,0,0.4)',
+          borderWidth: 1,
+          padding: 10,
+          filter: item => KEY_MONTHS.includes(item.dataIndex + 1),
+          callbacks: {
+            title: ctx => `${ctx[0].dataIndex + 1}ヶ月`,
+            label: ctx => '累計 ¥' + fmt(ctx.parsed.y) + '　（' + fmtMan(ctx.parsed.y) + '）'
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            autoSkip: false,
+            color: '#888780',
+            font: { size: 11 },
+            callback: (val, index) => allLabels[index] || ''
+          },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          border: { color: 'rgba(255,255,255,0.08)' }
+        },
+        y: {
+          ticks: {
+            color: '#888780',
+            font: { size: 11 },
+            callback: v => '¥' + (v >= 10000 ? Math.round(v/10000) + '万' : fmt(v))
+          },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          border: { color: 'rgba(255,255,255,0.08)' }
+        }
+      }
+    }
+  });
+}
+
+document.getElementById('unitPrice').addEventListener('input', update);
+document.getElementById('monthlyAcq').addEventListener('input', update);
+update();
+</script>
+</body>
+</html>
